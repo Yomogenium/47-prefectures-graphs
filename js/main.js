@@ -12,29 +12,126 @@
 	async function PageStart(){
 
 		// ページ生成
-		document.body.appendChild(document.createElement('header'));
-		document.body.appendChild(document.createElement('main'));
+		const main = document.createElement('main');
+		document.body.appendChild(main);
+
+
+		class HeaderComponent extends React.Component {
+			render() {
+				return (
+					'header',
+					'aaaa'
+				)
+			}
+		
+		}
+
+		ReactDOM.render(<HeaderComponent />, main);
+
+
 
 		// タイトル
-		let pagetitle;
+		let Pagetitle = {
+			first: document.querySelector('title').innerHTML,
+			changedaction: function(name){
+				document.querySelector('title').innerHTML = this.first + ' | ' + name;
 
+				//this.first + ' / ' + name
+			},
+		};
+		Pagetitle.changedaction('ああああ');
 
 
 
 		// 都道府県リストの作成
 		let pref_api_url = 'https://opendata.resas-portal.go.jp/api/v1/prefectures';
+
+		const prefectures_area = React.createElement;
+
+
+		
+		class ErrorView extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { liked: false };
+  }
+
+  render() {
+    if (this.state.liked) {
+      return 'You liked this.';
+    }
+
+    return prefectures_area(
+      'button',
+      { onClick: () => this.setState({ liked: true }) },
+      'Like'
+    );
+  }
+}
+
+ReactDOM.render(prefectures_area(ErrorView), main);
+
+
+
+
+
+		// 成功時の処理
+
+
+		// エラー時の処理
+
+
+
+
+
+
+
+
 		
 	    try {
-	        const pref_result = await PullApiData(pref_api_url);
-	        console.log(pref_result);
+	        const pref_result_data = await PullApiData(pref_api_url);
+
+
+/*
+	        class PrefCheckboxList extends React.Component {
+	        	constructor(props) {
+	        		super(props);
+	        		this.state = { liked: false };
+	        	}
+
+	        	render() {
+	        		return prefectures_area(
+
+	        			''
+
+
+      'button',
+      { onClick: () => this.setState({ liked: true }) },
+      'Like'
+    );
+  }
+}
+
+ReactDOM.render(prefectures_area(ErrorView), main);
+
+*/
 
 
 
+
+
+
+
+
+
+	 
+	        console.log(pref_result_data.result);
 
 
 
 /*
-const e = React.createElement;
+
+		const e = React.createElement;
 
 class LikeButton extends React.Component {
   constructor(props) {
@@ -54,9 +151,8 @@ class LikeButton extends React.Component {
     );
   }
 }
-
-
-
+const domContainer = document.querySelector('#like_button_container');
+ReactDOM.render(e(LikeButton), domContainer);
 
 
 
