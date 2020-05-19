@@ -27,81 +27,108 @@
 		});
 	}
 
+	function CheckButton(data){
+		return (
+			<label className='pref_cell'>
+				<input type='checkbox' name={data.prefCode} checked={data.check} />{data.prefName}
+			</label>
+		);
+	}
+
+
 	// ヘッダー
 	class HeaderComponent extends React.Component {
 		constructor(props){
 			super(props);
-			this.startname = document.querySelector('title').innerHTML;
+			this.state = {
+				title: document.querySelector('title').innerHTML,
+			}
 		}
 		render (){
-			return <h1>{this.startname}</h1>;
+			return <h1>{this.state.title}</h1>;
 		}
 	}
-
-	// <ul className="preflist"></ul>
 
 	// 本体部分生成
 	class ContentAreaComponent extends React.Component {
 		constructor(props){
 			super(props);
-			this.status = {
-				checked_prefs_list: [],
-			};
+			this.state = {
+				checked_pref: [1, 40, 31, 2],
+			}
 		}
 
 		render() {
-		/*
-			if(this.status.checked_prefs_list){
-				// aaa
-			}
-			*/
+			return (
+				<div className="contents">
+					<h2>都道府県</h2>
+					<PrefList />
+					<Graph pref={this.state.checked_pref} />
+				</div>
+			);
+		}
+	}
 
-			return <div>zzz...</div>;
+	class PrefList extends React.Component {
+		constructor(props){
+			super(props);
+			this.state = {
+				waitmode: 0,
+				prefdata: false,
+				errormessage: '',
+			}
+		}
+
+		async componentDidMount() {
+			this.setState({ waitmode: 0 });
+			try {
+				let data = await PullApiData('https://opendata.resas-portal.go.jp/api/v1/prefectures');
+				this.setState({
+					waitmode: 1,
+					prefdata: data,
+				});
+			}catch(e) {
+				this.setState({
+					waitmode: 2,
+					errormessage: 'error',
+				});
+			}
+		}
+
+		render() {
+			if(this.state.waitmode === 0) {
+				return <p className="loading">Please wait...</p>;
+
+			}else if(this.state.waitmode === 1) {
+				let list = this.state.prefdata.result;
+				console.log(list);
+
+				return 1;
+
+			}else if(this.state.waitmode === 2) {
+				return <p className="error">{this.state.errormessage}</p>;
+			}
+		}
+	}
+
+	class Graph extends React.Component {
+		constructor(props){
+			super(props);
+			this.state = {
+				prefs: this.props.pref,
+			}
+		}
+
+		render() {
+			if(this.state.prefs.length === 0){
+				console.log('arima sen');
+				return 'arima sen';
+			}else{
+				console.log('arima su');
+				return 'arima su';
+			}
 		}
 	}
 
 
 
-	
-
-
-
-
-/*
-
-	assb2();
-*/
-
-
-	async function assb2(){
-		var ab = 13;
-		var ass = await PullApiData('https://opendata.resas-portal.go.jp/api/v1/population/composition/perYear?prefCode=' + ab );
-		console.log(ass);
-	}
-
-
-
-
-
-
-/*
-
-class CommentBox extends React.Component {
-  constructor(props) {
-    super(props)
-  }
-  render() {
-    return (
-      <div className="commentBox">
-        {this.props.hello}! I am a {this.props.name}.
-      </div>
-    );
-  }
-}
-
-ReactDOM.render(
-  <CommentBox hello="Hello, world" name="CommentBox" />,
-  document.querySelector('main')
-)
-
-*/

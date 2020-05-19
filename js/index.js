@@ -1,10 +1,6 @@
 
 	document.body.appendChild(document.createElement('header'));
-
-	const main = document.createElement('main');
-	main.className = 'content';
-	document.body.appendChild(main);
-
+	document.body.appendChild(document.createElement('main'));
 
 	// header
 	const header = ReactDOM.render(
@@ -13,9 +9,7 @@
 	);
 
 	// ContentArea
-	var ssss = ReactDOM.render(
+	ReactDOM.render(
 		<ContentAreaComponent />,
 		document.querySelector('main')
 	);
-
-	console.log(ssss);
