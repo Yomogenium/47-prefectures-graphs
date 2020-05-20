@@ -27,12 +27,13 @@
 		});
 	}
 
-	function CheckButton(data){
-		return (
-			<label className='pref_cell'>
-				<input type='checkbox' name={data.prefCode} checked={data.check} />{data.prefName}
-			</label>
-		);
+	function LoadDOM(){
+		return <p className="loading">Please wait...</p>;
+	}
+
+	// エラー
+	function ErrorDOM(props){
+		return <p className="error">{props.message}</p>;
 	}
 
 
@@ -54,7 +55,41 @@
 		constructor(props){
 			super(props);
 			this.state = {
-				checked_pref: [1, 40, 31, 2],
+					
+
+
+				checked_list: [],
+				apidata: [],
+				graph: [],
+				population_data: [
+					// {name: 'Installation', data: [43934, 52503, 57177, 69658, 97031, 119931, 137133, 154175]}
+
+				],
+				preflist: [
+					// {code: 0, name: 'Installation', data: [43934, 52503, 57177, 69658, 97031, 119931, 137133, 154175]}
+				],
+			}
+		}
+
+		async componentDidMount() {}
+
+
+
+		updatePrefList(object){
+
+			// let asyncdata;
+			// const api_url = 'https://opendata.resas-portal.go.jp/api/v1/population/composition/perYear';
+
+
+			let a;
+			this.setState({ preflist: object.result });
+		}
+
+		updatePoplations(number, check) {
+			if(check && this.state.checked_list.indexOf(number) === -1){
+				this.state.checked_list.push(number);
+			}else if(!check){
+				this.state.checked_list = this.state.checked_list.filter(function(v) {return v != number});
 			}
 		}
 
@@ -62,51 +97,74 @@
 			return (
 				<div className="contents">
 					<h2>都道府県</h2>
-					<PrefList />
-					<Graph pref={this.state.checked_pref} />
+					<PrefList waitmode='0' updatePrefs={this.updatePrefList.bind(this)} updatePops={this.updatePoplations.bind(this)} />
+					<Graph waitmode='0' />
+
 				</div>
 			);
 		}
 	}
+
+	// 
 
 	class PrefList extends React.Component {
 		constructor(props){
 			super(props);
 			this.state = {
 				waitmode: 0,
-				prefdata: false,
-				errormessage: '',
-			}
+				parantdata: null,
+			};
+			this.handleClick = this.handleClick.bind(this);
+		}
+		
+		handleClick(event) {
+			this.props.updatePops(event.target.getAttribute('name'), event.target.checked);
+		}
+
+		update(data) {
+			console.log(data);
 		}
 
 		async componentDidMount() {
-			this.setState({ waitmode: 0 });
+			this.setState({ waitmode: 1 });
 			try {
 				let data = await PullApiData('https://opendata.resas-portal.go.jp/api/v1/prefectures');
+				this.props.updatePrefs(data);
 				this.setState({
-					waitmode: 1,
-					prefdata: data,
+					parantdata: data.result,
+					waitmode: 2,
 				});
+
 			}catch(e) {
 				this.setState({
-					waitmode: 2,
-					errormessage: 'error',
+					waitmode: 3,
 				});
 			}
 		}
 
 		render() {
 			if(this.state.waitmode === 0) {
-				return <p className="loading">Please wait...</p>;
-
-			}else if(this.state.waitmode === 1) {
-				let list = this.state.prefdata.result;
-				console.log(list);
-
-				return 1;
+				return null;
+			}
+			if(this.state.waitmode === 1) {
+				return <LoadDOM />;
 
 			}else if(this.state.waitmode === 2) {
-				return <p className="error">{this.state.errormessage}</p>;
+
+				let list = this.state.parantdata;
+				list = list.map(data => 
+						<li key={data.prefCode}>
+							<label>
+								<input type='checkbox' name={data.prefCode} onChange={this.handleClick} />
+								{data.prefName}
+							</label>
+						</li>
+				);
+
+				return <ul className='preflist'>{list}</ul>;
+
+			}else if(this.state.waitmode === 3) {
+				return <ErrorDOM message='error' />;
 			}
 		}
 	}
@@ -115,17 +173,73 @@
 		constructor(props){
 			super(props);
 			this.state = {
-				prefs: this.props.pref,
+				waitmode: 0,
+				errormessage: '',
+				selected_pref: this.props.pref,
+				populationdata: [],
 			}
 		}
 
+
+
+/*
+		componentWillReceiveProps() {}
+*/
+
+
+/*
+		async componentDidMount() {
+
+			if(this.state.selected_pref){
+				this.setState({ waitmode: 1 });
+				const api_url = 'https://opendata.resas-portal.go.jp/api/v1/population/composition/perYear';
+				const selecteds = this.state.selected_pref;
+
+				console.log(selecteds);
+
+				let resultlist;
+
+				let waitpoint = {};
+
+
+				try {
+					for(let value of selecteds){
+						console.log(await PullApiData(api_url + '?prefCode=' + value));
+
+						// resultlist.push();
+					}
+					console.log(resultlist);
+
+				
+
+									this.setState({
+					waitmode: 1,
+					prefdata: data,
+				});
+
+
+
+
+				}catch(e) {
+					this.setState({
+						waitmode: 3,
+						errormessage: 'error',
+					});
+				}
+			}
+		}
+*/
+
 		render() {
-			if(this.state.prefs.length === 0){
-				console.log('arima sen');
-				return 'arima sen';
-			}else{
-				console.log('arima su');
-				return 'arima su';
+			if(this.state.waitmode === 0){
+				return null;
+			}else if(this.state.waitmode === 1){
+				return <LoadDOM />;
+
+			}else if(this.state.waitmode === 2){
+				return (<div className="graph_container"><div id="graph">graph!</div></div>);
+			}else if(this.state.waitmode === 3){
+				return <ErrorDOM message={this.state.errormessage} />;
 			}
 		}
 	}
