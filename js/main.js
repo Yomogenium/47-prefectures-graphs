@@ -28,12 +28,22 @@
 	}
 
 	function LoadDOM(){
-		return <p className="loading">Please wait...</p>;
+		return <p className="loading">お待ちください...</p>;
 	}
 
-	// エラー
 	function ErrorDOM(props){
 		return <p className="error">{props.message}</p>;
+	}
+
+	function ConvertToDOMList(props){
+		const result = props.prefs.map(value =>
+									<li key={value.prefCode}>
+										<label>
+											<input type='checkbox' name={value.prefCode} onChange={props.handle} />
+											{value.prefName}
+										</label>
+									</li>);
+		return <ul className='preflist'>{result}</ul>;
 	}
 
 
@@ -54,27 +64,196 @@
 	class ContentAreaComponent extends React.Component {
 		constructor(props){
 			super(props);
+		}
+
+		render() {
+			return (
+				<div className="contents">
+					<h2>都道府県</h2>
+					<PrefList />
+				</div>
+			);
+		}
+	}
+
+	// 都道府県リストの管理
+	class PrefList extends React.Component {
+		constructor(props){
+			super(props);
 			this.state = {
-					
+				wait: 0,
+				list_data: [],
+				check_n: null,
+				check_b: false,
+			};
+			this.handleClick = this.handleClick.bind(this);
+		}
 
+		handleClick(event) {
+			this.setState({
+						check_n: event.target.getAttribute('name'),
+						check_b: event.target.checked,
+			});
+		}
 
-				checked_list: [],
-				apidata: [],
-				graph: [],
-				population_data: [
-					// {name: 'Installation', data: [43934, 52503, 57177, 69658, 97031, 119931, 137133, 154175]}
-
-				],
-				preflist: [
-					// {code: 0, name: 'Installation', data: [43934, 52503, 57177, 69658, 97031, 119931, 137133, 154175]}
-				],
+		async componentDidMount() {
+			this.setState({ wait: 1 });
+			try {
+				const data = await PullApiData('https://opendata.resas-portal.go.jp/api/v1/prefectures');
+				this.setState({
+					list_data: data.result,
+					wait: 2,
+				});
+			}catch(e) {
+				this.setState({
+					wait: 3,
+				});
 			}
 		}
 
-		async componentDidMount() {}
+		render() {
+			if(this.state.wait === 0) {
+				return null;
+			}
+			if(this.state.wait === 1) {
+				return <LoadDOM />;
+
+			}else if(this.state.wait === 2) {
+
+				return (
+						<section>
+							<ConvertToDOMList prefs={this.state.list_data} handle={this.handleClick} />
+							<Graph prefs={this.state.list_data} number={this.state.check_n} check={this.state.check_b} />
+						</section>
+				);
+
+			}else if(this.state.wait === 3) {
+				return <ErrorDOM message='エラーが発生しました。' />;
+			}
+		}
+	}
+
+	class Graph extends React.Component {
+		constructor(props){
+			super(props);
+			this.state = {
+				wait: 0,
+				gotdata: [],
+			};
+		}
+
+		// highchart格納用のデータリスト
+		initForHighcharts() {
+			return {
+				title: {text: '人口数の変遷 2010-2016'},
+				subtitle: {text: 'Source: https://opendata.resas-portal.go.jp/'},
+				yAxis: {title: {align: 'high', rotation: 0, y: -30, offset: 0, text: '人口数'}},
+				xAxis: {title: {text: '年度', align: 'high', x: 40}},
+				legend: {layout: '', align: 'right', verticalAlign: 'middle'},
+				plotOptions: {series: {label: {connectorAllowed: false }, pointStart: 2010}},
+				series: [], // ここに各県の人口データが入ります
+				responsive: {
+						rules: [{
+							condition: {maxWidth: 500},
+							chartOptions: {legend: {layout: 'horizontal', align: 'center', verticalAlign: 'bottom'}}
+							}]
+						},
+			};
+		}
+
+
+/*
+		Check(number, check) {
+
+			const current = this.state.gotdata;
+
+
+			if(check && Object.keys(current).indexOf(number) === -1){
+				console.log('add');
+			}else if(!check && Object.keys(current).indexOf(number) !== -1){
+				console.log('delete');
+
+
+				this.setState({
+					gotdata: this.state.gotdata,
+				});
+
+
+			}
+		}
+
+*/
+
+
+		async addData(num, preflist) {
+			if(num){
+
+				num = Number(num);
+
+				// API
+				const apiurl = 'https://opendata.resas-portal.go.jp/api/v1/population/composition/perYear';
+				const fromAPI = PullApiData(apiurl + '?prefCode=' + num); 
+
+				// 都道府県名
+				const targetpref = preflist.find(value => value.prefCode == num);
+
+				// ※総人口のみ抽出
+				let population_data = await fromAPI;
+				population_data = population_data.result.data.find(value => value.label == '総人口');
+
+				let obj = {
+					code: num,
+					name: targetpref.prefName,
+					popdata: population_data,
+				};
+
+				this.state.gotdata.push(obj);
+				console.log(this.state.gotdata);
+
+			}
+		}
 
 
 
+
+		pullData () {}
+
+
+		render() {
+
+			console.log(this.props.check);
+
+			this.addData(this.props.number, this.props.prefs);
+
+
+			// console.log(this.props.prefs);
+
+
+			var sss = this.initForHighcharts();
+
+
+			return <div id='grapharea'>this.props.check</div>;
+		}
+	}
+
+
+
+	class GGGG extends React.Component {
+		constructor(props){
+			super(props);
+			this.state = {
+				wait: 0,
+
+
+
+				senddata: 0,
+	
+				selected_pref: this.props.pref,
+				populationdata: [],
+			}
+		}
+
+/*
 		updatePrefList(object){
 
 			// let asyncdata;
@@ -85,104 +264,8 @@
 			this.setState({ preflist: object.result });
 		}
 
-		updatePoplations(number, check) {
-			if(check && this.state.checked_list.indexOf(number) === -1){
-				this.state.checked_list.push(number);
-			}else if(!check){
-				this.state.checked_list = this.state.checked_list.filter(function(v) {return v != number});
-			}
-		}
-
-		render() {
-			return (
-				<div className="contents">
-					<h2>都道府県</h2>
-					<PrefList waitmode='0' updatePrefs={this.updatePrefList.bind(this)} updatePops={this.updatePoplations.bind(this)} />
-					<Graph waitmode='0' />
-
-				</div>
-			);
-		}
-	}
-
-	// 
-
-	class PrefList extends React.Component {
-		constructor(props){
-			super(props);
-			this.state = {
-				waitmode: 0,
-				parantdata: null,
-			};
-			this.handleClick = this.handleClick.bind(this);
-		}
-		
-		handleClick(event) {
-			this.props.updatePops(event.target.getAttribute('name'), event.target.checked);
-		}
-
-		update(data) {
-			console.log(data);
-		}
-
-		async componentDidMount() {
-			this.setState({ waitmode: 1 });
-			try {
-				let data = await PullApiData('https://opendata.resas-portal.go.jp/api/v1/prefectures');
-				this.props.updatePrefs(data);
-				this.setState({
-					parantdata: data.result,
-					waitmode: 2,
-				});
-
-			}catch(e) {
-				this.setState({
-					waitmode: 3,
-				});
-			}
-		}
-
-		render() {
-			if(this.state.waitmode === 0) {
-				return null;
-			}
-			if(this.state.waitmode === 1) {
-				return <LoadDOM />;
-
-			}else if(this.state.waitmode === 2) {
-
-				let list = this.state.parantdata;
-				list = list.map(data => 
-						<li key={data.prefCode}>
-							<label>
-								<input type='checkbox' name={data.prefCode} onChange={this.handleClick} />
-								{data.prefName}
-							</label>
-						</li>
-				);
-
-				return <ul className='preflist'>{list}</ul>;
-
-			}else if(this.state.waitmode === 3) {
-				return <ErrorDOM message='error' />;
-			}
-		}
-	}
-
-	class Graph extends React.Component {
-		constructor(props){
-			super(props);
-			this.state = {
-				waitmode: 0,
-				errormessage: '',
-				selected_pref: this.props.pref,
-				populationdata: [],
-			}
-		}
 
 
-
-/*
 		componentWillReceiveProps() {}
 */
 
