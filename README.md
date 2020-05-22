@@ -1,3 +1,3 @@
-# 47 prefectures graph
+# 47 prefectures graphs
 都道府県の人口データを取得し、グラフ化するアプリです。
 ※動作にはBabelが動作する環境が必要となりますので、デスクトップ上では動きません。
