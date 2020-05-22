@@ -1,7 +1,7 @@
 
 	/* APIからデータ取得 */
-	function PullApiData(apiurl){
-		return new Promise(function(resolve, reject){
+	function PullApiData(apiurl) {
+		return new Promise(function(resolve, reject) {
 			const apikey = 'Rdj12wQTJR5qA5QihOp1lfMvgvPlrOAcbpsXBzRZ';
 			
 			/* リクエストの設定 */
@@ -10,16 +10,16 @@
 			request.setRequestHeader('X-API-KEY', apikey);
 
 			/* 成功時 */
-			request.addEventListener('load', function(){
+			request.addEventListener('load', function() {
 				const result = JSON.parse(this.response);
 				resolve(result);
 			}, false);
 
-			request.addEventListener('error', function(){
+			request.addEventListener('error', function() {
 				reject(0); /* Request error. */
 			}, false);
 
-			request.addEventListener('timeout', function(){
+			request.addEventListener('timeout', function() {
 				reject(1); /* Request timeout. */
 			}, false);
 
@@ -27,15 +27,15 @@
 		});
 	}
 
-	function LoadDOM(){
+	function LoadDOM() {
 		return <p className="loading">お待ちください...</p>;
 	}
 
-	function ErrorDOM(props){
+	function ErrorDOM(props) {
 		return <p className="error">{props.message}</p>;
 	}
 
-	function ConvertToDOMList(props){
+	function ConvertToDOMList(props) {
 		const result = props.prefs.map(value =>
 									<li key={value.prefCode}>
 										<label>
@@ -49,20 +49,20 @@
 
 	// ヘッダー
 	class HeaderComponent extends React.Component {
-		constructor(props){
+		constructor(props) {
 			super(props);
 			this.state = {
 				title: document.querySelector('title').innerHTML,
 			}
 		}
-		render (){
+		render() {
 			return <h1>{this.state.title}</h1>;
 		}
 	}
 
 	// 本体部分生成
 	class ContentAreaComponent extends React.Component {
-		constructor(props){
+		constructor(props) {
 			super(props);
 		}
 
@@ -78,7 +78,7 @@
 
 	// 都道府県リストの管理
 	class PrefList extends React.Component {
-		constructor(props){
+		constructor(props) {
 			super(props);
 			this.state = {
 				wait: 0,
@@ -112,13 +112,14 @@
 		}
 
 		render() {
-			if(this.state.wait === 0) {
+			const waitmode = this.state.wait;
+			if(waitmode === 0) {
 				return null;
 			}
-			if(this.state.wait === 1) {
+			if(waitmode === 1) {
 				return <LoadDOM />;
 
-			}else if(this.state.wait === 2) {
+			}else if(waitmode === 2) {
 
 				return (
 						<section>
@@ -127,30 +128,48 @@
 						</section>
 				);
 
-			}else if(this.state.wait === 3) {
+			}else if(waitmode === 3) {
 				return <ErrorDOM message='エラーが発生しました。' />;
 			}
 		}
 	}
 
 	class Graph extends React.Component {
-		constructor(props){
+		constructor(props) {
 			super(props);
 			this.state = {
-				wait: 0,
 				gotdata: [],
 			};
 		}
 
-		// highchart格納用のデータリスト
+		convertData(num, preflist, apidata) {
+			num = Number(num);
+			// 都道府県名
+			const targetpref = preflist.find(value => value.prefCode == num);
+			// ※総人口のみ抽出
+			let population_data = apidata;
+			population_data = population_data.result.data.find(value => value.label == '総人口');
+			let obj = {
+				code: num,
+				name: targetpref.prefName,
+				popdata: population_data,
+			};
+			return obj;
+		}
+
+		// Highcharts格納用のデータリスト
 		initForHighcharts() {
+			const formatter_1 = function() {
+				return Highcharts.numberFormat(this.value, 0, '', ',') + '人';
+			};
+
 			return {
-				title: {text: '人口数の変遷 2010-2016'},
+				title: {text: '人口数の変遷'},
 				subtitle: {text: 'Source: https://opendata.resas-portal.go.jp/'},
-				yAxis: {title: {align: 'high', rotation: 0, y: -30, offset: 0, text: '人口数'}},
-				xAxis: {title: {text: '年度', align: 'high', x: 40}},
+				yAxis: {title: {text: '総人口数', align: 'high', rotation: 0, y: -30, offset: 0}, labels: {allowDecimals: true, formatter: formatter_1} },
+				xAxis: {title: {text: '年度', align: 'high', x: 40}, type: 'datetime', labels: { format: '{value:%Y}' } },
 				legend: {layout: '', align: 'right', verticalAlign: 'middle'},
-				plotOptions: {series: {label: {connectorAllowed: false }, pointStart: 2010}},
+				plotOptions: {series: {label: {connectorAllowed: false }}}, 
 				series: [], // ここに各県の人口データが入ります
 				responsive: {
 						rules: [{
@@ -161,171 +180,56 @@
 			};
 		}
 
+		// Highcharts設定
+		setToHighcharts(objlist) {
+			let result = this.initForHighcharts();
 
-/*
-		Check(number, check) {
-
-			const current = this.state.gotdata;
-
-
-			if(check && Object.keys(current).indexOf(number) === -1){
-				console.log('add');
-			}else if(!check && Object.keys(current).indexOf(number) !== -1){
-				console.log('delete');
-
-
-				this.setState({
-					gotdata: this.state.gotdata,
-				});
-
-
+			let current_obj; // 各県の人口データ
+			let popdt, startyear;
+			for(let val_1 of objlist) {
+				popdt = val_1.popdata.data.map(val_2 => val_2.value);
+				startyear = val_1.popdata.data[0].year;
+				current_obj = {
+					name: val_1.name,
+					data: popdt,
+					pointStart: Date.parse(startyear),
+					pointInterval: 3600 * 1000 * 24 * 365 * 5, // 5年ごとのデータ
+				};
+				result.series.push(current_obj);
 			}
+			Highcharts.chart('graph', result); // 適用
 		}
 
-*/
+		async componentDidUpdate() {
 
+			const num = this.props.number;
+			const check = this.props.check;
 
-		async addData(num, preflist) {
-			if(num){
-
-				num = Number(num);
+			const gotdata = this.state.gotdata;
+			const target_from_list = gotdata.find(value => value.code == num);
+			if(check && target_from_list === undefined) {
 
 				// API
 				const apiurl = 'https://opendata.resas-portal.go.jp/api/v1/population/composition/perYear';
-				const fromAPI = PullApiData(apiurl + '?prefCode=' + num); 
+				const fromapi = await PullApiData(apiurl + '?prefCode=' + num);
 
-				// 都道府県名
-				const targetpref = preflist.find(value => value.prefCode == num);
+				// 変換+セット
+				const conv_obj = this.convertData(num, this.props.prefs, fromapi);
+				gotdata.push(conv_obj);
 
-				// ※総人口のみ抽出
-				let population_data = await fromAPI;
-				population_data = population_data.result.data.find(value => value.label == '総人口');
+			}else if(!check && target_from_list !== undefined) {
+				const target_index = gotdata.findIndex(value => value.code == num);
+				gotdata.splice(target_index, 1);
+			}
 
-				let obj = {
-					code: num,
-					name: targetpref.prefName,
-					popdata: population_data,
-				};
-
-				this.state.gotdata.push(obj);
-				console.log(this.state.gotdata);
-
+			if(gotdata.length > 0) {
+				this.setToHighcharts(gotdata);
+			}else{
+				document.getElementById('graph').innerHTML = '';
 			}
 		}
-
-
-
-
-		pullData () {}
-
 
 		render() {
-
-			console.log(this.props.check);
-
-			this.addData(this.props.number, this.props.prefs);
-
-
-			// console.log(this.props.prefs);
-
-
-			var sss = this.initForHighcharts();
-
-
-			return <div id='grapharea'>this.props.check</div>;
+			return <div id='graph'></div>;
 		}
 	}
-
-
-
-	class GGGG extends React.Component {
-		constructor(props){
-			super(props);
-			this.state = {
-				wait: 0,
-
-
-
-				senddata: 0,
-	
-				selected_pref: this.props.pref,
-				populationdata: [],
-			}
-		}
-
-/*
-		updatePrefList(object){
-
-			// let asyncdata;
-			// const api_url = 'https://opendata.resas-portal.go.jp/api/v1/population/composition/perYear';
-
-
-			let a;
-			this.setState({ preflist: object.result });
-		}
-
-
-
-		componentWillReceiveProps() {}
-*/
-
-
-/*
-		async componentDidMount() {
-
-			if(this.state.selected_pref){
-				this.setState({ waitmode: 1 });
-				const api_url = 'https://opendata.resas-portal.go.jp/api/v1/population/composition/perYear';
-				const selecteds = this.state.selected_pref;
-
-				console.log(selecteds);
-
-				let resultlist;
-
-				let waitpoint = {};
-
-
-				try {
-					for(let value of selecteds){
-						console.log(await PullApiData(api_url + '?prefCode=' + value));
-
-						// resultlist.push();
-					}
-					console.log(resultlist);
-
-				
-
-									this.setState({
-					waitmode: 1,
-					prefdata: data,
-				});
-
-
-
-
-				}catch(e) {
-					this.setState({
-						waitmode: 3,
-						errormessage: 'error',
-					});
-				}
-			}
-		}
-*/
-
-		render() {
-			if(this.state.waitmode === 0){
-				return null;
-			}else if(this.state.waitmode === 1){
-				return <LoadDOM />;
-
-			}else if(this.state.waitmode === 2){
-				return (<div className="graph_container"><div id="graph">graph!</div></div>);
-			}else if(this.state.waitmode === 3){
-				return <ErrorDOM message={this.state.errormessage} />;
-			}
-		}
-	}
-
-
-
