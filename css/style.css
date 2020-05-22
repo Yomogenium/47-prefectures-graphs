@@ -1,0 +1,45 @@
+
+body{
+	margin: 0;
+}
+
+header{
+	text-align: center;
+    box-shadow: 0px 4px 8px #d2d2d2;
+    overflow: hidden;
+}
+
+header h1{
+	margin: 0.5rem auto 0.3rem;
+}
+
+.contents{
+	max-width: 960px;
+    margin: auto;
+    width: 100%;
+    overflow: hidden;
+}
+.contents h2{
+    margin-left: 3rem;
+}
+.preflist{
+	max-width: 960px;
+    width: 100%;
+    margin: auto;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.preflist li{
+    width: 20%;
+    margin: 0 0 0.4rem 3rem;
+}
+
+.preflist li label{
+    display: block;
+    border-bottom: 1px solid black;
+}
